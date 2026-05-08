@@ -4,6 +4,7 @@
 # Installs:
 #   - uv (Python package manager)        → ~/.local/bin/uv
 #   - claude (Claude Code CLI)           → ~/.local/bin/claude
+#   - codex (OpenAI Codex CLI)           → ~/.local/bin/codex
 #
 # Configures shell:
 #   - ~/.bashrc          → puts ~/.local/bin on PATH for interactive shells
@@ -47,6 +48,33 @@ else
   echo "[ok] claude installed: $(claude --version 2>&1 | head -1)"
 fi
 
+# --- codex ------------------------------------------------------------------
+# OpenAI's Codex CLI ships no curl|sh installer. The npm path needs Node,
+# which the cluster doesn't have. So we pull the prebuilt static-musl binary
+# directly from the latest GitHub release.
+step "codex"
+if command -v codex >/dev/null 2>&1; then
+  echo "[skip] codex already installed: $(codex --version 2>&1 | head -1)"
+else
+  arch="$(uname -m)"
+  case "$arch" in
+    x86_64|aarch64) ;;
+    *) echo "[fail] unsupported arch '$arch' for codex prebuilt binary" >&2; exit 1 ;;
+  esac
+  asset="codex-${arch}-unknown-linux-musl.tar.gz"
+  url="https://github.com/openai/codex/releases/latest/download/${asset}"
+
+  tmp="$(mktemp -d)"
+  curl -fL -o "$tmp/codex.tgz" "$url"
+  tar -xzf "$tmp/codex.tgz" -C "$tmp"
+  mv "$tmp/codex-${arch}-unknown-linux-musl" "$bin_dir/codex"
+  chmod +x "$bin_dir/codex"
+  rm -rf "$tmp"
+
+  hash -r
+  echo "[ok] codex installed: $(codex --version 2>&1 | head -1)"
+fi
+
 # --- shell init -------------------------------------------------------------
 # Make sure ~/.local/bin is on PATH for every future shell.
 #
@@ -78,7 +106,7 @@ cat <<EOF
 Installed under: $bin_dir  (on /data NFS, visible from every worker pod)
 Shell rc files:  ~/.bashrc, ~/.bash_profile
 
-To use 'uv' and 'claude' in THIS shell right now:
+To use 'uv', 'claude', and 'codex' in THIS shell right now:
   source ~/.bashrc
 
 Future ssh sessions pick up PATH automatically.
@@ -86,5 +114,6 @@ Future ssh sessions pick up PATH automatically.
 Next:
   - In the edison-setup repo on the cluster: 'uv sync --locked' to
     materialize .venv from the committed lockfile.
-  - Run 'claude' once to log in.
+  - Run 'claude' once to log in (Anthropic).
+  - Run 'codex' once to log in (OpenAI).
 EOF
