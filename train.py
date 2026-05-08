@@ -1,12 +1,18 @@
 """Tiny MNIST CNN.
 
-Same script supports four launch modes:
+Run from the project directory (where pyproject.toml + uv.lock live) so
+`uv run` resolves the right .venv. Four launch modes, all uv-driven:
 
-  python train.py                                  # CPU or single GPU
-  srun --gpus=1 --pty python train.py              # 1 GPU under Slurm
+  uv run python train.py                                # CPU or single GPU
+  srun --gpus=1 --pty uv run python train.py            # 1 GPU under Slurm
   srun --gpus=8 --ntasks=1 --pty \\
-      torchrun --standalone --nproc-per-node=8 train.py
-  sbatch [--nodes=N --gpus-per-node=8] train.sbatch
+      uv run torchrun --standalone --nproc-per-node=8 train.py
+  sbatch [--nodes=N --gpus-per-node=8] train.sbatch     # train.sbatch
+                                                        # already calls uv
+
+(Plain `python train.py` works only inside an already-activated venv —
+e.g. after `source .venv/bin/activate`. Outside one you'll get
+ModuleNotFoundError on `torch`, since system python has none.)
 
 The script reads RANK / WORLD_SIZE / LOCAL_RANK / MASTER_ADDR / MASTER_PORT
 from the environment (set by torchrun) and inits NCCL+DDP when present;
