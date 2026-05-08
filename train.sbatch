@@ -25,12 +25,12 @@ cd "$SCRIPT_DIR"
 
 mkdir -p "$HOME/logs"
 
-# sbatch jobs do not source ~/.bashrc; activate the molr1 venv explicitly.
-VENV="${VENV:-$HOME/code/molr1/.venv}"
-if [ -f "$VENV/bin/activate" ]; then
-  # shellcheck disable=SC1090
-  source "$VENV/bin/activate"
-fi
+# sbatch jobs do not source ~/.bashrc; ensure uv is on PATH.
+export PATH="$HOME/.local/bin:$PATH"
+
+# Materialize .venv from uv.lock once on the login pod. No-op if already in
+# sync. --locked fails loudly if pyproject.toml and uv.lock have drifted.
+uv sync --locked
 
 MASTER_ADDR=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n1)
 MASTER_PORT=$((29500 + SLURM_JOB_ID % 1000))
@@ -38,7 +38,9 @@ GPUS_PER_NODE=${SLURM_GPUS_PER_NODE:-1}
 
 echo "[sbatch] job=$SLURM_JOB_ID nodes=$SLURM_NNODES gpus-per-node=$GPUS_PER_NODE master=$MASTER_ADDR:$MASTER_PORT"
 
-srun --kill-on-bad-exit=1 torchrun \
+# --no-sync skips the venv freshness check inside each Slurm task; we already
+# synced above, and the .venv lives on shared NFS so all workers see it.
+srun --kill-on-bad-exit=1 uv run --no-sync torchrun \
   --nnodes="$SLURM_NNODES" \
   --nproc-per-node="$GPUS_PER_NODE" \
   --rdzv-id="$SLURM_JOB_ID" \
