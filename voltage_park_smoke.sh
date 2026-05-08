@@ -2,6 +2,13 @@
 # Voltage Park cluster end-to-end setup smoke test.
 # Usage: ./voltage_park_smoke.sh <host-alias>      e.g. ./voltage_park_smoke.sh g0287
 #        ./voltage_park_smoke.sh g0287 --skip-srun  to skip the GPU/worker check
+#
+# First-time-on-cluster reminder:
+#   After running voltage_park_setup.sh on the cluster, run
+#       source ~/.bashrc
+#   (or open a new shell) before using `uv` or `claude` — the setup script
+#   patches ~/.bashrc, but a child process can't update its parent shell's
+#   PATH. Future ssh sessions pick it up automatically.
 
 set -u
 
