@@ -21,14 +21,14 @@
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=4
 #SBATCH --time=00:30:00
-#SBATCH --output=%h/logs/%x-%j.out
+#SBATCH --output=/home/%u/logs/%x-%j.out
 
 set -euo pipefail
 
-# Resolve to the directory this sbatch script lives in, so train.py is found
-# regardless of where `sbatch` was invoked from.
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+# Slurm copies the script to a spool dir on the compute node, so BASH_SOURCE
+# would point there. Use SLURM_SUBMIT_DIR (the dir `sbatch` was run from) so
+# train.py and pyproject.toml resolve on shared storage.
+cd "$SLURM_SUBMIT_DIR"
 
 mkdir -p "$HOME/logs"
 
