@@ -1,11 +1,18 @@
 #!/bin/bash
-# Submit:
-#   sbatch train.sbatch                                       # 1 node, 1 GPU
-#   sbatch --gpus-per-node=8 --cpus-per-task=8 train.sbatch   # 1 node, 8 GPUs
-#   sbatch --nodes=4 --gpus-per-node=8 --cpus-per-task=8 train.sbatch
+# Submit (template: sbatch [SLURM_OPTS] train.sbatch [TRAIN_ARGS]):
 #
-# Pass-through args go to train.py:
+# Single node:
+#   sbatch train.sbatch                                                  # 1 node x 1 GPU  (default; 1 rank)
+#   sbatch --gpus-per-node=8 --cpus-per-task=8 train.sbatch              # 1 node x 8 GPUs (8 ranks)
+#
+# Multi-node DDP (just bump --nodes=N; everything else stays the same):
+#   sbatch --nodes=2 --gpus-per-node=8 --cpus-per-task=8 train.sbatch    # 2 nodes x 8 GPUs (16 ranks)
+#   sbatch --nodes=4 --gpus-per-node=8 --cpus-per-task=8 train.sbatch    # 4 nodes x 8 GPUs (32 ranks)
+#   sbatch --nodes=8 --gpus-per-node=8 --cpus-per-task=8 train.sbatch    # 8 nodes x 8 GPUs (64 ranks)
+#
+# Pass-through args go to train.py (after the .sbatch path):
 #   sbatch train.sbatch --epochs 5 --batch-size 256
+#   sbatch --nodes=4 --gpus-per-node=8 --cpus-per-task=8 train.sbatch --epochs 10
 #
 #SBATCH --job-name=mnist-ddp
 #SBATCH --partition=main
