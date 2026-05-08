@@ -32,19 +32,20 @@ older layout; what's actually on the cluster differs in important ways
 
 - Slurm reachable from the login node; `sinfo` works; partition `main` is
   visible to the user and accepts `--gpus=1 --cpus-per-task=1` allocations.
-- `/home/$USER` is itself an admin-managed symlink → `/data/users/$USER`,
-  so the entire home directory lives on the 200 TB `/data` NFS. New users
-  land under `/data/users/`; some legacy accounts (alex, conor, emoss,
-  james, michael, sid, ...) live directly under `/data/`.
-- Because `~` is already on `/data`, the runbook's per-subdir symlink block
-  is unnecessary. Expected layout under `~`, all as **plain directories**:
-  - `~/aviary_data`
-  - `~/logs`
-  - `~/.cache/huggingface`
-  - `~/.cache/uv`
-  The runbook's "don't symlink caches across NFS" warning is moot here:
-  there is no `/home`↔`/data` crossing because they resolve to the same
-  NFS.
+- **Storage: `/home` and `/data` are the same place.** `/home/<you>` is an
+  admin-managed symlink to `/data/users/<you>`, so `~` already lives on the
+  200T `/data` NFS. The `/home` directory itself sits on the login pod's
+  local overlay and contains nothing but these per-user symlinks; your
+  actual files are on NFS via the redirection. Because there is no
+  `/home`↔`/data` boundary to cross, the runbook's "symlink subdirs out of
+  `/home` into `/data`" recipe is unnecessary, and its warning against
+  symlinking `~/.cache` across NFS doesn't apply. Just `mkdir` what you
+  need under `~`:
+  ```bash
+  mkdir -p ~/aviary_data ~/logs ~/.cache/huggingface ~/.cache/uv
+  ```
+  New users land under `/data/users/`; some legacy accounts (alex, conor,
+  emoss, james, michael, sid, ...) live directly under `/data/`.
 - Default login shell is `bash` (the cluster ships `sh` by default; the
   runbook documents the switch).
 - `~/confs/interactive.sbatch` exists (the helper from the runbook).
@@ -100,6 +101,9 @@ ssh g0287
 ### On the login node
 
 ```bash
+# First-time per-user setup. `~` is already on the /data NFS — no symlinks needed.
+mkdir -p ~/aviary_data ~/logs ~/.cache/huggingface ~/.cache/uv
+
 # Pretty squeue (alias from the runbook's .bashrc).
 sq
 
